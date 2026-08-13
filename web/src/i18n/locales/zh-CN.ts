@@ -1,6 +1,6 @@
 export default {
     meta: {
-        title: "无限画布",
+        title: "以诗为墨·神笔绘卷",
         description: "一个无限画布创作工具",
     },
     theme: { toggle: "切换主题" },
@@ -151,7 +151,7 @@ export default {
         retrySuccess: "重试成功",
     },
     imageWorkbench: {
-        title: "生图工作台",
+        title: "AIGC绘卷",
         promptPlaceholder: "描述画面主体、风格、构图、光线和用途",
         references: "参考图",
         removeReference: "移除参考图",
@@ -310,7 +310,7 @@ export default {
     },
     navigation: {
         canvas: "我的画布",
-        image: "生图工作台",
+        image: "AIGC绘卷",
         video: "视频创作台",
         prompts: "提示词库",
         assets: "我的资产",

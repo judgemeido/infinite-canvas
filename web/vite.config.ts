@@ -41,6 +41,12 @@ function localPluginsManifest(): Plugin {
 export default defineConfig({
     base: process.env.VITE_BASE || "/",
     plugins: [react(), localPluginsManifest()],
+    server: {
+        fs: {
+            // 允许 dev server 访问仓库根目录（如根目录下的 bk.png，全局背景图引用）
+            allow: [webDir, resolve(webDir, "..")],
+        },
+    },
     resolve: {
         alias: {
             "@": resolve(webDir, "src"),

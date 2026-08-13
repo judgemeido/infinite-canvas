@@ -129,6 +129,20 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    /* 全局背景图：以半透明形式叠在主题底色上，随明暗主题自然融入页面 */
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-image: url("../../../bk.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.08;
+    }
     textarea {
         resize: none;
     }

@@ -1,6 +1,6 @@
 export default {
     meta: {
-        title: "Infinite Canvas",
+        title: "以诗为墨·神笔绘卷",
         description: "An infinite canvas creation tool",
     },
     theme: { toggle: "Toggle theme" },
@@ -151,7 +151,7 @@ export default {
         retrySuccess: "Retry succeeded",
     },
     imageWorkbench: {
-        title: "Image Studio",
+        title: "AIGC绘卷",
         promptPlaceholder: "Describe the subject, style, composition, lighting, and intended use",
         references: "Reference images",
         removeReference: "Remove reference image",
@@ -310,7 +310,7 @@ export default {
     },
     navigation: {
         canvas: "My Canvases",
-        image: "Image Studio",
+        image: "AIGC绘卷",
         video: "Video Studio",
         prompts: "Prompt Library",
         assets: "My Assets",
