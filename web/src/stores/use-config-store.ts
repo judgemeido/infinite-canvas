@@ -231,6 +231,7 @@ export const useConfigStore = create<ConfigStore>()(
                         ...config,
                         channelMode: "local",
                         apiFormat: normalizeApiFormat(config.apiFormat),
+                        baseUrl: migrateOpenAiBaseUrl(config.baseUrl, normalizeApiFormat(config.apiFormat)),
                         channels,
                         models,
                         imageModel: normalizeModelOptionValue(config.imageModel || config.model, channels),
@@ -279,7 +280,7 @@ export function createModelChannel(channel?: Partial<ModelChannel>): ModelChanne
     return {
         id: channel?.id?.trim() || nanoid(),
         name: channel?.name?.trim() || i18n.t("config.channels.newName"),
-        baseUrl: channel?.baseUrl?.trim() || defaultBaseUrlForApiFormat(apiFormat),
+        baseUrl: migrateOpenAiBaseUrl(channel?.baseUrl?.trim() || defaultBaseUrlForApiFormat(apiFormat), apiFormat),
         apiKey: channel?.apiKey || "",
         apiFormat,
         models: normalizeChannelModels(channel?.models),
@@ -374,6 +375,22 @@ export function defaultBaseUrlForApiFormat(apiFormat: ApiCallFormat) {
     if (apiFormat === "gemini") return GEMINI_BASE_URL;
     if (apiFormat === "ark") return ARK_BASE_URL;
     return OPENAI_BASE_URL;
+}
+
+// 旧版本默认把 openai 渠道直连 api.change2pro.com（更早还有 api.openai.com），
+// 浏览器直连这些域名会触发跨域预检失败。统一迁移到同源反代 /api（由 Cloudflare Worker 转发），
+// 修复已在浏览器持久化了旧地址、导致无法生图的老用户。
+const LEGACY_OPENAI_HOSTS = new Set(["api.change2pro.com", "api.openai.com"]);
+function migrateOpenAiBaseUrl(baseUrl: string, apiFormat: ApiCallFormat) {
+    if (apiFormat !== "openai") return baseUrl;
+    const value = (baseUrl || "").trim();
+    if (!value) return value;
+    try {
+        if (LEGACY_OPENAI_HOSTS.has(new URL(value).host.toLowerCase())) return OPENAI_BASE_URL;
+    } catch {
+        // 相对地址（如已是 /api）解析失败，保持原样
+    }
+    return value;
 }
 
 function normalizeApiFormat(apiFormat: unknown): ApiCallFormat {

@@ -1,14 +1,17 @@
-import { ArrowLeft, ArrowRight, BookOpen, CheckSquare, ClipboardPaste, Download, FolderPlus, History, ImagePlus, LoaderCircle, PenLine, Plus, SlidersHorizontal, Sparkles, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckSquare, ClipboardPaste, Download, FolderPlus, History, ImagePlus, LoaderCircle, PenLine, Plus, SlidersHorizontal, Sparkles, Trash2, Trophy, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { App, Button, Checkbox, Drawer, Empty, Image, Input, Modal, Tag, Tooltip, Typography } from "antd";
 import localforage from "localforage";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { ImageSettingsPanel } from "@/components/image-settings-panel";
 import { PromptSelectDialog } from "@/components/prompts/prompt-select-dialog";
 import { AssetPickerModal, type InsertAssetPayload } from "@/components/canvas/asset-picker-modal";
 import { canvasThemes } from "@/lib/canvas-theme";
+import { findLevel } from "@/constant/levels";
+import { useLevelsStore } from "@/stores/use-levels-store";
 import { imageReferenceLabel } from "@/lib/image-reference-prompt";
 import { modelOptionLabel, useConfigStore, useEffectiveConfig, type AiConfig } from "@/stores/use-config-store";
 import { useThemeStore } from "@/stores/use-theme-store";
@@ -100,9 +103,25 @@ export default function ImagePage() {
     const processedCommandRef = useRef(0);
     const agentTaskIdRef = useRef<string | undefined>(undefined);
 
+    const navigate = useNavigate();
+    const activeLevelId = useLevelsStore((state) => state.activeLevelId);
+    const completedLevelIds = useLevelsStore((state) => state.completedLevelIds);
+    const markCompleted = useLevelsStore((state) => state.markCompleted);
+    const activeLevel = findLevel(activeLevelId);
+    const [levelCompleteOpen, setLevelCompleteOpen] = useState(false);
+    const appliedLevelRef = useRef("");
+
     const model = effectiveConfig.imageModel || effectiveConfig.model;
     const canGenerate = Boolean(prompt.trim());
     const generationCount = Math.max(1, Math.min(10, Number(config.count) || 1));
+
+    // 进入某个关卡时，把该关起手提示词预填到输入框（同一关只填一次，避免覆盖用户后续编辑）。
+    useEffect(() => {
+        if (!activeLevel || !activeLevel.starterPrompt || appliedLevelRef.current === activeLevel.id) return;
+        appliedLevelRef.current = activeLevel.id;
+        setPrompt(activeLevel.starterPrompt);
+        setResults([]);
+    }, [activeLevel]);
 
     useEffect(() => {
         if (!running || !startedAt) return;
@@ -207,6 +226,11 @@ export default function ImagePage() {
                 }),
             );
             successCount ? message.success(t("imageWorkbench.generated")) : message.error(failed?.reason instanceof Error ? failed.reason.message : t("workbench.generationFailed"));
+            // 生成成功即视为通关：首次通过才标记并弹庆祝，重复生成不再打扰。
+            if (successCount && activeLevel && !completedLevelIds.includes(activeLevel.id)) {
+                markCompleted(activeLevel.id);
+                setLevelCompleteOpen(true);
+            }
         } finally {
             setRunning(false);
         }
@@ -389,7 +413,17 @@ export default function ImagePage() {
                         <div>
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <h1 className="text-2xl font-semibold text-stone-950 dark:text-stone-100">{t("imageWorkbench.title")}</h1>
+                                    {activeLevel ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate("/levels")}
+                                            className="mb-1.5 inline-flex items-center gap-1 text-xs text-stone-500 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+                                        >
+                                            <ArrowLeft className="size-3.5" />
+                                            {t("levels.back")}
+                                        </button>
+                                    ) : null}
+                                    <h1 className="text-2xl font-semibold text-stone-950 dark:text-stone-100">{activeLevel ? activeLevel.name : t("imageWorkbench.title")}</h1>
                                 </div>
                                 <div className="flex shrink-0 gap-2 lg:hidden">
                                     <Button icon={<History className="size-4" />} onClick={() => setLogsOpen(true)}>
@@ -401,6 +435,27 @@ export default function ImagePage() {
                                 </div>
                             </div>
                         </div>
+
+                        {activeLevel ? (
+                            <div className="mt-4 overflow-hidden rounded-xl border border-stone-200 dark:border-stone-800">
+                                <div className="flex gap-3 p-3">
+                                    <img src={activeLevel.cover} alt={activeLevel.name} className="size-20 shrink-0 rounded-lg object-cover" loading="lazy" />
+                                    <div className="min-w-0 space-y-1.5">
+                                        <div className="flex items-center gap-2">
+                                            <span className="rounded-full border border-stone-300 px-2 py-0.5 text-[11px] text-stone-500 dark:border-stone-700 dark:text-stone-400">{t("levels.levelNo", { order: activeLevel.order })}</span>
+                                            {completedLevelIds.includes(activeLevel.id) ? (
+                                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 px-2 py-0.5 text-[11px] text-emerald-600 dark:text-emerald-300">
+                                                    <Trophy className="size-3" />
+                                                    {t("levels.status.completed")}
+                                                </span>
+                                            ) : null}
+                                        </div>
+                                        <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{activeLevel.poem}</p>
+                                        <p className="text-xs text-stone-500 dark:text-stone-400">{activeLevel.task}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
 
                         <div className="mt-6 space-y-5">
                             <div>
@@ -557,6 +612,23 @@ export default function ImagePage() {
             <AssetPickerModal open={assetPickerOpen} defaultTab="my-assets" onInsert={(payload) => void insertPickedAsset(payload)} onClose={() => setAssetPickerOpen(false)} />
             <Modal title={t("workbench.deleteLogs")} open={deleteConfirmOpen} onCancel={() => setDeleteConfirmOpen(false)} onOk={deleteSelectedLogs} okText={t("common.delete")} okButtonProps={{ danger: true }} cancelText={t("common.cancel")}>
                 {t("workbench.deleteLogsConfirm", { count: selectedLogIds.length })}
+            </Modal>
+            <Modal open={levelCompleteOpen} onCancel={() => setLevelCompleteOpen(false)} footer={null} centered width={380}>
+                <div className="flex flex-col items-center gap-3 py-4 text-center">
+                    <div className="flex size-16 items-center justify-center rounded-full bg-amber-100 text-amber-500 dark:bg-amber-500/15">
+                        <Trophy className="size-8" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-stone-900 dark:text-stone-100">{t("levels.complete.title")}</h3>
+                    {activeLevel ? <p className="text-sm text-stone-500 dark:text-stone-400">{t("levels.complete.desc", { name: activeLevel.name })}</p> : null}
+                    <div className="mt-2 flex w-full gap-2">
+                        <Button block onClick={() => setLevelCompleteOpen(false)}>
+                            {t("levels.complete.stay")}
+                        </Button>
+                        <Button block type="primary" onClick={() => navigate("/levels")}>
+                            {t("levels.complete.back")}
+                        </Button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

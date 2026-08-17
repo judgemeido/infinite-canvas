@@ -2,7 +2,7 @@ import { ImagePlus, Settings2 } from "lucide-react";
 
 export const navigationTools = [
     {
-        slug: "image",
+        slug: "levels",
         icon: ImagePlus,
     },
     {
