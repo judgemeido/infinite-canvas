@@ -73,17 +73,19 @@ function LevelCard({ level, completed, unlocked, onStart }: { level: Level; comp
                 </div>
             </div>
             <div className="flex flex-1 flex-col gap-3 p-4">
-                <p className="text-sm text-stone-600 dark:text-stone-300">{level.intro}</p>
-                <span className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1 text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400">
-                    {level.type === "poem-chain" ? <Feather className="size-3.5" /> : <ImagePlus className="size-3.5" />}
-                    {level.task}
-                </span>
+                <div className="flex flex-1 flex-col gap-3">
+                    <p className="text-sm text-stone-600 dark:text-stone-300">{level.intro}</p>
+                    <span className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1 text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400">
+                        {level.type === "poem-chain" ? <Feather className="size-3.5" /> : <ImagePlus className="size-3.5" />}
+                        {level.task}
+                    </span>
+                </div>
                 <button
                     type="button"
                     disabled={!unlocked}
                     onClick={onStart}
                     style={{ color: "#1c1917" }}
-                    className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     {completed ? t("levels.replay") : t("levels.start")}
                     <ArrowRight className="size-4" />
